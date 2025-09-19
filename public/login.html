@@ -1,227 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login - Meetnet</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            color: #1f2937;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .dark body {
-            background-color: #1a1a1a;
-            color: #e5e7eb;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Meetnet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f2f5;
+      color: #1f2937;
+    }
+  </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-sm">
-        <h1 class="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100">Welcome to Meetnet</h1>
-        <p class="text-center text-gray-600 dark:text-gray-400 mb-6">Enter your details to log in or register.</p>
-        
-        <!-- Output Message Container -->
-        <div id="outputMessage" class="p-3 mb-4 rounded-lg text-sm font-medium hidden"></div>
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-sm">
+    <h1 class="text-2xl font-bold mb-6 text-center">Welcome to Meetnet</h1>
+    <p class="text-center text-gray-600 dark:text-gray-400 mb-6">Enter your details to log in or register.</p>
 
-        <div class="space-y-4">
-            <input type="text" id="userNameInput" placeholder="Your Name" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <input type="email" id="emailInput" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <input type="password" id="passwordInput" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ease-in-out duration-150">
-                Log In or Register
-            </button>
-        </div>
+    <div id="outputMessage" class="p-3 mb-4 rounded-lg text-sm font-medium hidden"></div>
+
+    <div class="space-y-4">
+      <input type="text" id="userNameInput" placeholder="Your Name" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+      <input type="email" id="emailInput" placeholder="Email" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+      <input type="password" id="passwordInput" placeholder="Password" class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+      <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">
+        Log In or Register
+      </button>
     </div>
+  </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        // This is a placeholder for Firebase config. It will be provided by the server.
-        const firebaseConfig = { /* ... */ }; 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const loginBtn = document.getElementById('loginBtn');
-        const userNameInput = document.getElementById('userNameInput');
-        const emailInput = document.getElementById('emailInput');
-        const passwordInput = document.getElementById('passwordInput');
-        const outputMessage = document.getElementById('outputMessage');
+    // ✅ Your Firebase config here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-        // Helper function to display messages to the user
-        function showMessage(message, type) {
-            outputMessage.textContent = message;
-            outputMessage.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
-            if (type === 'success') {
-                outputMessage.classList.add('bg-green-200', 'text-green-800');
-            } else if (type === 'error') {
-                outputMessage.classList.add('bg-red-200', 'text-red-800');
-            }
-            outputMessage.classList.remove('hidden');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginBtn = document.getElementById('loginBtn');
+    const userNameInput = document.getElementById('userNameInput');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const outputMessage = document.getElementById('outputMessage');
+
+    function showMessage(message, type) {
+      outputMessage.textContent = message;
+      outputMessage.className = "p-3 mb-4 rounded-lg text-sm font-medium";
+      if (type === 'success') {
+        outputMessage.classList.add('bg-green-200','text-green-800');
+      } else {
+        outputMessage.classList.add('bg-red-200','text-red-800');
+      }
+      outputMessage.classList.remove('hidden');
+    }
+
+    loginBtn.addEventListener('click', async () => {
+      const userName = userNameInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!userName || !email || !password) {
+        showMessage("⚠️ Please fill in all fields.", 'error');
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMessage("✅ Logged in successfully!", 'success');
+      } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            showMessage("✅ Registered and logged in successfully!", 'success');
+          } catch (registerError) {
+            showMessage("❌ Registration failed: " + registerError.message, 'error');
+            return;
+          }
+        } else {
+          showMessage("❌ Login failed: " + error.message, 'error');
+          return;
         }
+      }
 
-        loginBtn.addEventListener('click', async () => {
-            const userName = userNameInput.value.trim();
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (!userName || !email || !password) {
-                showMessage("⚠️ Please fill in all fields.", 'error');
-                return;
-            }
-
-            try {
-                // Try to sign in first
-                console.log("Attempting to sign in with email:", email);
-                await signInWithEmailAndPassword(auth, email, password);
-                console.log("✅ Logged in successfully!");
-                showMessage("✅ Logged in successfully!", 'success');
-
-            } catch (error) {
-                // If sign-in fails, check if the user is new
-                if (error.code === 'auth/user-not-found') {
-                    console.log("User not found. Attempting to register new user...");
-                    try {
-                        // Create a new user with email and password
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        console.log("✅ Registered and logged in successfully!");
-                        showMessage("✅ Registered and logged in successfully!", 'success');
-                    } catch (registerError) {
-                        console.error("❌ Registration failed:", registerError.message);
-                        showMessage("❌ Registration failed. Please try again.", 'error');
-                        return;
-                    }
-                } else {
-                    console.error("❌ Login failed:", error.message);
-                    showMessage("❌ Login failed. Please check your credentials.", 'error');
-                    return;
-                }
-            }
-
-            // If login or registration is successful, save user name and redirect
-            localStorage.setItem('userName', userName);
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500); // Redirect after a short delay
-        });
-    </script>
+      localStorage.setItem('userName', userName);
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    });
+  </script>
 </body>
-</html>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login - Meetnet</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            color: #1f2937;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .dark body {
-            background-color: #1a1a1a;
-            color: #e5e7eb;
-        }
-    </style>
-</head>
-<body class="flex items-center justify-center min-h-screen">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-sm">
-        <h1 class="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100">Welcome to Meetnet</h1>
-        <p class="text-center text-gray-600 dark:text-gray-400 mb-6">Enter your details to log in or register.</p>
-        
-        <!-- Output Message Container -->
-        <div id="outputMessage" class="p-3 mb-4 rounded-lg text-sm font-medium hidden"></div>
-
-        <div class="space-y-4">
-            <input type="text" id="userNameInput" placeholder="Your Name" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <input type="email" id="emailInput" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <input type="password" id="passwordInput" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ease-in-out duration-150">
-                Log In or Register
-            </button>
-        </div>
-    </div>
-
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        // This is a placeholder for Firebase config. It will be provided by the server.
-        const firebaseConfig = { /* ... */ }; 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        const loginBtn = document.getElementById('loginBtn');
-        const userNameInput = document.getElementById('userNameInput');
-        const emailInput = document.getElementById('emailInput');
-        const passwordInput = document.getElementById('passwordInput');
-        const outputMessage = document.getElementById('outputMessage');
-
-        // Helper function to display messages to the user
-        function showMessage(message, type) {
-            outputMessage.textContent = message;
-            outputMessage.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
-            if (type === 'success') {
-                outputMessage.classList.add('bg-green-200', 'text-green-800');
-            } else if (type === 'error') {
-                outputMessage.classList.add('bg-red-200', 'text-red-800');
-            }
-            outputMessage.classList.remove('hidden');
-        }
-
-        loginBtn.addEventListener('click', async () => {
-            const userName = userNameInput.value.trim();
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (!userName || !email || !password) {
-                showMessage("⚠️ Please fill in all fields.", 'error');
-                return;
-            }
-
-            try {
-                // Try to sign in first
-                console.log("Attempting to sign in with email:", email);
-                await signInWithEmailAndPassword(auth, email, password);
-                console.log("✅ Logged in successfully!");
-                showMessage("✅ Logged in successfully!", 'success');
-
-            } catch (error) {
-                // If sign-in fails, check if the user is new
-                if (error.code === 'auth/user-not-found') {
-                    console.log("User not found. Attempting to register new user...");
-                    try {
-                        // Create a new user with email and password
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        console.log("✅ Registered and logged in successfully!");
-                        showMessage("✅ Registered and logged in successfully!", 'success');
-                    } catch (registerError) {
-                        console.error("❌ Registration failed:", registerError.message);
-                        showMessage("❌ Registration failed. Please try again.", 'error');
-                        return;
-                    }
-                } else {
-                    console.error("❌ Login failed:", error.message);
-                    showMessage("❌ Login failed. Please check your credentials.", 'error');
-                    return;
-                }
-            }
-
-            // If login or registration is successful, save user name and redirect
-            localStorage.setItem('userName', userName);
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500); // Redirect after a short delay
-        });
-    </script>
-</body>
-
 </html>
