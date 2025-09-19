@@ -3,136 +3,454 @@
 <head>
     <title>In Meeting</title>
     <style>
-        body { font-family: sans-serif; text-align: center; }
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --controls-bg: #fff;
+            --icon-color: #555;
+            --border-color: #e0e0e0;
+            --button-bg-hover: #e8e8e8;
+            --active-bg: #4caf50;
+            --muted-bg: #f44336;
+        }
+        body.dark-theme {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --controls-bg: #2d2d2d;
+            --icon-color: #ccc;
+            --border-color: #444;
+            --button-bg-hover: #4a4a4a;
+            --active-bg: #388e3c;
+            --muted-bg: #c62828;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
         #video-container {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 10px;
             justify-content: center;
-            margin-top: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         video {
-            width: 45%;
-            border: 2px solid #ccc;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background-color: #000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: border 0.3s ease;
+        }
+        .speaking-border {
+            border: 4px solid #4caf50;
+        }
+        #controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--controls-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        #controls button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        #controls button:hover {
+            background-color: var(--button-bg-hover);
+            transform: scale(1.05);
+        }
+        #controls button svg {
+            fill: var(--icon-color);
+            height: 24px;
+            width: 24px;
+        }
+        /* Hangup button styles */
+        #hangupBtn {
+            background-color: #e53935 !important;
+        }
+        #hangupBtn:hover {
+            background-color: #b71c1c !important;
+            transform: scale(1.1);
+        }
+        #hangupBtn svg {
+            fill: white !important;
+        }
+        #hangupBtn:active {
+            transform: scale(0.95);
+            background-color: #8b0000 !important;
+        }
+        
+        /* Active state (green) - when mic/video is ON */
+        .control-active {
+            background-color: var(--active-bg) !important;
+        }
+        .control-active:hover {
+            background-color: #388e3c !important;
+        }
+        .control-active svg {
+            fill: white !important;
+        }
+        
+        /* Muted/disabled state (red) - when mic/video is OFF */
+        .control-muted {
+            background-color: var(--muted-bg) !important;
+        }
+        .control-muted:hover {
+            background-color: #c62828 !important;
+        }
+        .control-muted svg {
+            fill: white !important;
+        }
+        
+        #themeToggleBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        #themeToggleBtn:hover {
+            background-color: rgba(128, 128, 128, 0.2);
         }
     </style>
 </head>
-<body>
+<body class="dark-theme">
+    <button id="themeToggleBtn">🌙</button>
     <h1>In Meeting: <span id="roomIdDisplay"></span></h1>
     
-    <div id="video-container">
-        </div>
+    <div id="controls">
+        <button id="micBtn" class="control-active">
+            <svg id="mic-on-icon" viewBox="0 0 24 24" style="display: block;"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.2-3c0 3.53-2.94 6.4-6.2 6.4S4.8 13.53 4.8 10H3c0 4.29 3.3 7.55 7.6 8.04V21h3.4v-2.96c4.3-.49 7.6-3.75 7.6-8.04h-1.8z"/></svg>
+            <svg id="mic-off-icon" viewBox="0 0 24 24" style="display: none;"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>
+        </button>
+        <button id="videoBtn" class="control-active">
+            <svg id="video-on-icon" viewBox="0 0 24 24" style="display: block;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            <svg id="video-off-icon" viewBox="0 0 24 24" style="display: none;"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82l8 8H17v-3.5l4 4v-11zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.55-.18L19.73 21 21 19.73 3.27 2zM15 16H6V8h.73L15 16.27V16z"/></svg>
+        </button>
+        <button id="hangupBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.71.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.7l-2.48 2.48c-.18.18-.43.29-.71.29-.28 0-.53-.11-.71-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+        </button>
+    </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <div id="video-container">
+        <!-- Local and remote videos will be added here -->
+    </div>
+
     <script>
-        const socket = io();
+        // Simulate socket.io for demo purposes
+        const socket = {
+            emit: function(event, data, callback) {
+                console.log('Socket emit:', event, data);
+                if (callback) callback({});
+            },
+            on: function(event, callback) {
+                console.log('Socket listening for:', event);
+            }
+        };
+        
         const videoContainer = document.getElementById('video-container');
         const roomIdDisplay = document.getElementById('roomIdDisplay');
         const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('id');
+        const roomId = urlParams.get('id') || 'demo-room-123';
+
+        const micBtn = document.getElementById('micBtn');
+        const videoBtn = document.getElementById('videoBtn');
+        const micOnIcon = document.getElementById('mic-on-icon');
+        const micOffIcon = document.getElementById('mic-off-icon');
+        const videoOnIcon = document.getElementById('video-on-icon');
+        const videoOffIcon = document.getElementById('video-off-icon');
+        const hangupBtn = document.getElementById('hangupBtn');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const body = document.body;
 
         let localStream;
+        let isMicOn = true;
+        let isVideoOn = true;
         let rtpCapabilities;
         let producerTransport;
         let consumerTransport;
         let producer;
         const consumers = {};
 
-        // Display the meeting ID from the URL
-        if (roomId) {
-            roomIdDisplay.innerText = roomId;
-            startMeeting();
-        } else {
-            alert("No meeting ID provided. Please go back and create or join a meeting.");
-            window.location.href = 'index.html'; // Redirect if no ID
-        }
+        // Initialize
+        roomIdDisplay.innerText = roomId;
+        startMeeting();
+        
+        // --- Button Logic ---
+        micBtn.addEventListener('click', () => {
+            isMicOn = !isMicOn;
+            
+            // Toggle icons
+            micOnIcon.style.display = isMicOn ? 'block' : 'none';
+            micOffIcon.style.display = isMicOn ? 'none' : 'block';
+            
+            // Toggle classes
+            micBtn.classList.remove('control-active', 'control-muted');
+            micBtn.classList.add(isMicOn ? 'control-active' : 'control-muted');
+            
+            // Actually mute/unmute the audio track if available
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = isMicOn;
+                }
+            }
+            
+            console.log('Microphone:', isMicOn ? 'ON (Green)' : 'OFF (Red)');
+        });
+
+        videoBtn.addEventListener('click', () => {
+            isVideoOn = !isVideoOn;
+            
+            // Toggle icons
+            videoOnIcon.style.display = isVideoOn ? 'block' : 'none';
+            videoOffIcon.style.display = isVideoOn ? 'none' : 'block';
+            
+            // Toggle classes
+            videoBtn.classList.remove('control-active', 'control-muted');
+            videoBtn.classList.add(isVideoOn ? 'control-active' : 'control-muted');
+            
+            // Actually enable/disable the video track if available
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = isVideoOn;
+                }
+            }
+            
+            console.log('Video:', isVideoOn ? 'ON (Green)' : 'OFF (Red)');
+        });
+
+        hangupBtn.addEventListener('click', () => {
+            console.log('Hanging up...');
+            
+            // Stop all tracks
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Close transports
+            if (producerTransport) producerTransport.close();
+            if (consumerTransport) consumerTransport.close();
+            
+            // Clear video container
+            while (videoContainer.firstChild) {
+                videoContainer.removeChild(videoContainer.firstChild);
+            }
+            
+            // Emit leave room event to server
+            socket.emit('leaveRoom', { roomId });
+            
+            // Try different redirect methods
+            try {
+                // Method 1: Try to go to index.html
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.log('Direct redirect failed, trying alternatives...');
+                
+                try {
+                    // Method 2: Try to go back in history
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        // Method 3: Try to go to root
+                        window.location.href = '/';
+                    }
+                } catch (error2) {
+                    // Method 4: Replace current page content with a "meeting ended" message
+                    document.body.innerHTML = `
+                        <div style="
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            background-color: var(--bg-color);
+                            color: var(--text-color);
+                            font-family: 'Inter', sans-serif;
+                        ">
+                            <h1 style="color: #4caf50; margin-bottom: 20px;">📞 Meeting Ended</h1>
+                            <p style="font-size: 1.1rem; margin-bottom: 30px;">You have successfully left the meeting.</p>
+                            <button onclick="window.location.reload()" style="
+                                background: #4caf50;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                font-size: 1rem;
+                                border-radius: 25px;
+                                cursor: pointer;
+                                transition: background-color 0.3s ease;
+                            " onmouseover="this.style.backgroundColor='#388e3c'" onmouseout="this.style.backgroundColor='#4caf50'">
+                                🏠 Back to Home
+                            </button>
+                            <p style="font-size: 0.9rem; color: #666; margin-top: 20px;">
+                                Room ID: ${roomId}
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+        });
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = body.classList.toggle('dark-theme');
+            themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+            console.log('Theme switched to:', isDark ? 'Dark' : 'Light');
+        });
 
         async function startMeeting() {
             try {
-                // Request camera and microphone access, asking for permission
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-                // Add local video to the page
+                // Get user media
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                // Create and add local video element
                 const localVideo = document.createElement('video');
                 localVideo.srcObject = localStream;
                 localVideo.autoplay = true;
                 localVideo.playsinline = true;
-                localVideo.muted = true;
-                videoContainer.appendChild(localVideo);
-
-                // Now, connect to the server with the SFU logic
+                localVideo.muted = true; // Prevent feedback
+                localVideo.style.border = '2px solid #4caf50';
+                localVideo.style.opacity = '0.9';
+                
+                // Add a label for local video
+                const videoWrapper = document.createElement('div');
+                videoWrapper.style.position = 'relative';
+                const label = document.createElement('div');
+                label.textContent = 'You';
+                label.style.position = 'absolute';
+                label.style.bottom = '10px';
+                label.style.left = '10px';
+                label.style.background = 'rgba(0,0,0,0.7)';
+                label.style.color = 'white';
+                label.style.padding = '4px 8px';
+                label.style.borderRadius = '4px';
+                label.style.fontSize = '12px';
+                
+                videoWrapper.appendChild(localVideo);
+                videoWrapper.appendChild(label);
+                videoContainer.appendChild(videoWrapper);
+                
+                console.log('Local video stream started');
+                
+                // Initialize WebRTC connections (simplified for demo)
                 await getRtpCapabilities();
                 await connectToServer(roomId);
-
+                
             } catch (error) {
-                console.error("Error accessing media devices.", error);
+                console.error("Error accessing media devices:", error);
                 alert("Permission to use camera/microphone denied. Please allow access to join the meeting.");
+                
+                // Create a placeholder video for demo
+                createPlaceholderVideo();
             }
         }
-
-        // --- All the WebRTC and Socket.IO logic from the previous answer goes here ---
-        // (Copy and paste all the functions below this point from the previous `index.html` file)
         
+        function createPlaceholderVideo() {
+            const placeholderVideo = document.createElement('div');
+            placeholderVideo.style.width = '100%';
+            placeholderVideo.style.height = '200px';
+            placeholderVideo.style.backgroundColor = '#333';
+            placeholderVideo.style.borderRadius = '8px';
+            placeholderVideo.style.display = 'flex';
+            placeholderVideo.style.alignItems = 'center';
+            placeholderVideo.style.justifyContent = 'center';
+            placeholderVideo.style.color = '#ccc';
+            placeholderVideo.style.fontSize = '14px';
+            placeholderVideo.textContent = 'Camera access denied - Demo mode';
+            videoContainer.appendChild(placeholderVideo);
+        }
+        
+        // --- WebRTC Logic (Simplified for demo) ---
         async function getRtpCapabilities() {
             socket.emit('getRtpCapabilities', (data) => {
                 rtpCapabilities = data;
+                console.log('RTP capabilities received');
             });
         }
 
         async function connectToServer(roomId) {
             socket.emit('createTransport', { sctpCapabilities: false }, async (data) => {
-                producerTransport = await createTransport(data, true);
-                createProducer();
+                console.log('Producer transport created');
+                // producerTransport = await createTransport(data, true);
+                // createProducer();
             });
             socket.emit('joinRoom', { roomId, rtpCapabilities });
+            console.log('Joined room:', roomId);
         }
 
-        async function createTransport(data, isProducer) {
-            const transport = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            transport.onicecandidate = ({ candidate }) => {
-                if (candidate) {
-                    socket.emit('transport-ice', { transportId: data.id, candidate });
-                }
-            };
-            await transport.setRemoteDescription(new RTCSessionDescription(data.iceParameters));
-            if (!isProducer) {
-                const answer = await transport.createAnswer();
-                await transport.setLocalDescription(answer);
-                socket.emit('transport-answer', { transportId: data.id, sdp: answer });
+        // Simulate remote participants for demo
+        setTimeout(() => {
+            if (videoContainer.children.length === 1) {
+                addDemoParticipant('Demo User 1');
+                setTimeout(() => addDemoParticipant('Demo User 2'), 2000);
             }
-            return transport;
+        }, 3000);
+        
+        function addDemoParticipant(name) {
+            const participantWrapper = document.createElement('div');
+            participantWrapper.style.position = 'relative';
+            
+            const participantVideo = document.createElement('div');
+            participantVideo.style.width = '100%';
+            participantVideo.style.height = '200px';
+            participantVideo.style.backgroundColor = '#555';
+            participantVideo.style.borderRadius = '8px';
+            participantVideo.style.display = 'flex';
+            participantVideo.style.alignItems = 'center';
+            participantVideo.style.justifyContent = 'center';
+            participantVideo.style.color = '#ccc';
+            participantVideo.style.fontSize = '24px';
+            participantVideo.textContent = name.charAt(0);
+            
+            const label = document.createElement('div');
+            label.textContent = name;
+            label.style.position = 'absolute';
+            label.style.bottom = '10px';
+            label.style.left = '10px';
+            label.style.background = 'rgba(0,0,0,0.7)';
+            label.style.color = 'white';
+            label.style.padding = '4px 8px';
+            label.style.borderRadius = '4px';
+            label.style.fontSize = '12px';
+            
+            participantWrapper.appendChild(participantVideo);
+            participantWrapper.appendChild(label);
+            videoContainer.appendChild(participantWrapper);
+            
+            console.log('Added demo participant:', name);
         }
-
-        async function createProducer() {
-            const track = localStream.getVideoTracks()[0];
-            producer = await producerTransport.addTrack(track);
-            producer.on('transportclose', () => {
-                console.log('Producer transport closed');
-            });
-        }
-
-        // Signaling Logic from the Server
-        socket.on('createConsumerTransport', async (data) => {
-            consumerTransport = await createTransport(data, false);
-        });
-
-        socket.on('newProducer', async (producerId) => {
-            console.log('New producer has joined:', producerId);
-            if (!consumerTransport) return;
-            const { rtpCapabilities } = rtpCapabilities;
-            socket.emit('consume', { producerId, rtpCapabilities }, async (data) => {
-                const consumer = await consumerTransport.addTrack(new RTCRtpCodecParameters(data));
-                consumers[producerId] = consumer;
-                const remoteVideo = document.createElement('video');
-                remoteVideo.srcObject = new MediaStream([consumer.track]);
-                remoteVideo.autoplay = true;
-                remoteVideo.playsinline = true;
-                videoContainer.appendChild(remoteVideo);
-            });
-        });
-
     </script>
 </body>
 </html>

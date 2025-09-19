@@ -3,19 +3,114 @@
 <head>
     <title>Meetnet</title>
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-        input, button { padding: 10px; margin: 5px; }
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --input-bg: #f9f9f9;
+        }
+        body.dark-theme {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --card-bg: #2d2d2d;
+            --border-color: #444;
+            --button-bg: #4a4a4a;
+            --button-text: #e0e0e0;
+            --input-bg: #3c3c3c;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 50px 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .controls input, .controls button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        .controls input {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        .controls button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .controls button:hover {
+            opacity: 0.9;
+        }
+        .join-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        #groupIdDisplay {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        #themeToggleBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        #themeToggleBtn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
-<body>
-    <h1>Create or Join a Meeting</h1>
-    
-    <div id="controls">
-        <button id="createGroupBtn">Create Meeting</button>
-        <div id="groupIdDisplay" style="margin-top: 10px;"></div>
-        <hr style="margin: 20px 0;">
-        <input type="text" id="roomIdInput" placeholder="Enter Meeting ID">
-        <button id="joinBtn">Join Meeting</button>
+<body class="dark-theme">
+    <button id="themeToggleBtn">☀️ / 🌙</button>
+
+    <div class="container">
+        <h1>Create or Join a Meeting</h1>
+        
+        <div class="controls">
+            <button id="createGroupBtn">Create Meeting</button>
+            <div id="groupIdDisplay" style="margin-top: 10px;"></div>
+        </div>
+        
+        <div class="join-section controls">
+            <input type="text" id="roomIdInput" placeholder="Enter Meeting ID">
+            <button id="joinBtn">Join Meeting</button>
+        </div>
     </div>
 
     <script>
@@ -23,13 +118,13 @@
         const joinBtn = document.getElementById('joinBtn');
         const roomIdInput = document.getElementById('roomIdInput');
         const groupIdDisplay = document.getElementById('groupIdDisplay');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const body = document.body;
 
         createGroupBtn.addEventListener('click', () => {
             const newGroupId = generateUniqueId();
             groupIdDisplay.innerText = `Your Meeting ID: ${newGroupId}`;
             roomIdInput.value = newGroupId;
-            
-            // Redirect to the new meeting page with the generated ID
             window.location.href = `meeting.html?id=${newGroupId}`;
         });
 
@@ -39,8 +134,11 @@
                 alert("Please enter a Meeting ID.");
                 return;
             }
-            // Redirect to the meeting page with the entered ID
             window.location.href = `meeting.html?id=${roomId}`;
+        });
+
+        themeToggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
         });
 
         function generateUniqueId() {
