@@ -14,13 +14,8 @@ const io = socketIo(server, {
 // A simple in-memory store for rooms and their peers
 const rooms = {};
 
-// Serve the static frontend files from the public directory
+// Serve the static frontend files
 app.use(express.static(__dirname + '/public'));
-
-// Explicitly serve the login.html file for the root URL
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/login.html');
-});
 
 io.on('connection', socket => {
     console.log('A user connected:', socket.id);

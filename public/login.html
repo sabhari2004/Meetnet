@@ -16,6 +16,14 @@
             background-color: #1a1a1a;
             color: #e5e7eb;
         }
+        .output-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .output-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen dark">
@@ -28,23 +36,45 @@
         <div class="space-y-4">
             <input type="text" id="userNameInput" placeholder="Your Name" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
             <input type="email" id="emailInput" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <input type="password" id="passwordInput" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ease-in-out duration-150">
-                Log In or Register
-            </button>
+            <input type="password" id="passwordInput" placeholder="Password (min 6 chars)" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+            
+            <div class="flex space-x-4">
+                <button id="loginBtn" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ease-in-out duration-150">
+                    Log In
+                </button>
+                <button id="registerBtn" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 transition ease-in-out duration-150">
+                    Register
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            updateProfile 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        const firebaseConfig = { /* You need to paste your firebase config here */ }; 
+        // ✅ Your Firebase config
+        const firebaseConfig = {
+          apiKey: "AIzaSyD9gSeQ2bHU-DrDC_P6ZuSqIpDPYsOcHiw",
+          authDomain: "meetnet-1a53a.firebaseapp.com",
+          projectId: "meetnet-1a53a",
+          storageBucket: "meetnet-1a53a.firebasestorage.app",
+          messagingSenderId: "360862112948",
+          appId: "1:360862112948:web:4c6fb84b62deea88de0be1",
+          measurementId: "G-RXTVDFKSPQ"
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
         const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
         const userNameInput = document.getElementById('userNameInput');
         const emailInput = document.getElementById('emailInput');
         const passwordInput = document.getElementById('passwordInput');
@@ -52,42 +82,75 @@
 
         function showMessage(message, type) {
             outputMessage.textContent = message;
-            outputMessage.className = `p-3 mb-4 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`;
+            outputMessage.classList.remove('hidden', 'output-success', 'output-error');
+            outputMessage.classList.add(`output-${type}`);
+            outputMessage.classList.remove('hidden');
         }
 
+        function validateInputs(userName, email, password) {
+            if (!userName || !email || !password) {
+                showMessage("⚠️ Please fill in all fields.", 'error');
+                return false;
+            }
+            if (password.length < 6) {
+                showMessage("⚠️ Password must be at least 6 characters.", 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // LOGIN
         loginBtn.addEventListener('click', async () => {
             const userName = userNameInput.value.trim();
             const email = emailInput.value.trim();
             const password = passwordInput.value.trim();
 
-            if (!userName || !email || !password) {
-                showMessage("⚠️ Please fill in all fields.", 'error');
-                return;
-            }
+            if (!validateInputs(userName, email, password)) return;
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
+                localStorage.setItem('userName', userName);
                 showMessage("✅ Logged in successfully!", 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
             } catch (error) {
-                if (error.code === 'auth/user-not-found') {
-                    showMessage("User not found. Registering new user...", 'error');
-                    try {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        showMessage("✅ Registered and logged in successfully!", 'success');
-                    } catch (registerError) {
-                        showMessage("❌ Registration failed. Please try again.", 'error');
-                        return;
-                    }
+                if (error.code === 'auth/wrong-password') {
+                    showMessage("❌ Incorrect password. Please try again.", 'error');
+                } else if (error.code === 'auth/user-not-found') {
+                    showMessage("❌ User not found. Please register first.", 'error');
                 } else {
                     showMessage(`❌ Login failed: ${error.message}`, 'error');
-                    return;
                 }
             }
+        });
 
-            localStorage.setItem('userName', userName);
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
+        // REGISTER
+        registerBtn.addEventListener('click', async () => {
+            const userName = userNameInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!validateInputs(userName, email, password)) return;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+                // update profile with displayName
+                await updateProfile(userCredential.user, { displayName: userName });
+
+                localStorage.setItem('userName', userName);
+                showMessage("✅ Registered and logged in successfully!", 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    showMessage("❌ This email is already registered. Please log in.", 'error');
+                } else if (error.code === 'auth/invalid-email') {
+                    showMessage("❌ Invalid email format.", 'error');
+                } else if (error.code === 'auth/weak-password') {
+                    showMessage("❌ Password is too weak. Please use 6+ characters.", 'error');
+                } else {
+                    showMessage(`❌ Registration failed: ${error.message}`, 'error');
+                }
+            }
         });
     </script>
 </body>
