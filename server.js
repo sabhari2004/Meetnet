@@ -1,154 +1,69 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mediasoup = require('mediasoup');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
-// --- Mediasoup Variables ---
-let worker;
+// A simple in-memory store for rooms and their peers
 const rooms = {};
-const peers = {};
 
-const mediaCodecs = [
-    {
-        kind: 'audio',
-        mimeType: 'audio/opus',
-        clockRate: 48000,
-        channels: 2
-    },
-    {
-        kind: 'video',
-        mimeType: 'video/VP8',
-        clockRate: 90000,
-        parameters: {
-            'x-google-start-bitrate': 1000
-        }
-    }
-];
-
-// --- Helper functions for state management ---
-function getRouterBySocketId(socketId) {
-    const roomId = getRoomIdBySocketId(socketId);
-    if (roomId && rooms[roomId]) {
-        return rooms[roomId].router;
-    }
-    return null;
-}
-
-function getRoomIdBySocketId(socketId) {
-    for (const roomId in rooms) {
-        if (rooms[roomId].peers.has(socketId)) {
-            return roomId;
-        }
-    }
-    return null;
-}
-
-function getProducerById(producerId) {
-    for (const roomId in rooms) {
-        for (const peerId of rooms[roomId].peers.keys()) {
-            if (peers[peerId].producers.has(producerId)) {
-                return peers[peerId].producers.get(producerId);
-            }
-        }
-    }
-    return null;
-}
-
-// --- Server Setup ---
+// Serve the static frontend files
 app.use(express.static(__dirname + '/public'));
 
-// --- Mediasoup Worker Initialization ---
-async function createWorker() {
-    try {
-        worker = await mediasoup.createWorker({
-            logLevel: 'debug',
-            logTags: ['info', 'ice', 'dtls', 'rtp', 'srtp', 'rtcp']
-        });
-        console.log('Mediasoup worker created successfully');
-    } catch (error) {
-        console.error('Failed to create mediasoup worker:', error);
-        return;
-    }
-
-    worker.on('died', () => {
-        console.error('Mediasoup worker died, exiting in 2 seconds...');
-        setTimeout(() => process.exit(1), 2000);
-    });
-
-    // Create a single router for the worker to use.
-    // In a multi-room app, you would create a router per room.
-    const router = await worker.createRouter({ mediaCodecs });
-    worker.router = router;
-
-    // Now that the worker and router are ready, start the server
-    const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
-}
-
-createWorker();
-
-// --- Socket.IO Logic ---
 io.on('connection', socket => {
     console.log('A user connected:', socket.id);
 
-    // Get the server's RTP capabilities for the client
-    socket.on('getRtpCapabilities', (callback) => {
-        if (worker && worker.router) {
-            callback(worker.router.rtpCapabilities);
-        } else {
-            console.error('Mediasoup worker or router not ready.');
-            callback(null);
-        }
-    });
-
     // When a user joins a room
-    socket.on('joinRoom', async ({ roomId, rtpCapabilities }) => {
+    socket.on('joinRoom', (roomId, userName) => {
         if (!rooms[roomId]) {
-            // Create a new room with a Mediasoup Router
-            const router = await worker.createRouter({ mediaCodecs });
-            rooms[roomId] = { router, peers: new Map() };
+            rooms[roomId] = { peers: [] };
         }
 
-        const router = rooms[roomId].router;
-        const peer = {
-            id: socket.id,
-            transports: new Map(),
-            producers: new Map(),
-            consumers: new Map()
-        };
-        peers[socket.id] = peer;
-        rooms[roomId].peers.set(socket.id, peer);
+        // Add the new peer to the room
+        rooms[roomId].peers.push({ id: socket.id, name: userName });
+        socket.join(roomId);
+
+        // Notify all other peers in the room about the new user
+        socket.to(roomId).emit('userJoined', { id: socket.id, name: userName });
+        
+        // Send a list of all existing peers back to the new user
+        const existingPeers = rooms[roomId].peers.filter(peer => peer.id !== socket.id);
+        socket.emit('existingPeers', existingPeers);
+
+        console.log(`User ${userName} joined room ${roomId}. Total users: ${rooms[roomId].peers.length}`);
     });
 
-    // Create a transport for sending or receiving media
-    socket.on('createTransport', async (payload, callback) => {
-        const { isProducer } = payload;
-        const router = getRouterBySocketId(socket.id);
-        if (!router) return;
-
-        const transport = await router.createWebRtcTransport({
-            listenIps: [{ ip: '103.224.33.35', announcedIp: null }],
-            enableUdp: true,
-            enableTcp: true,
-            preferUdp: true,
-        });
-
-        const transportData = {
-            transportId: transport.id,
-            iceParameters: transport.iceParameters,
-            iceCandidates: transport.iceCandidates,
-            dtlsParameters: transport.dtlsParameters
-        };
-        callback(transportData);
-
-        peers[socket.id].transports.set(transport.id, transport);
+    // Handle the WebRTC signaling
+    socket.on('offer', (payload) => {
+        io.to(payload.target).emit('offer', payload);
     });
 
-    // ... (rest of the code for 'produce', 'consume', 'disconnect') ...
+    socket.on('answer', (payload) => {
+        io.to(payload.target).emit('answer', payload);
+    });
+
+    socket.on('ice-candidate', (payload) => {
+        io.to(payload.target).emit('ice-candidate', payload);
+    });
+
+    // Handle disconnects
+    socket.on('disconnect', () => {
+        console.log('A user disconnected:', socket.id);
+        for (const roomId in rooms) {
+            rooms[roomId].peers = rooms[roomId].peers.filter(peer => peer.id !== socket.id);
+            socket.to(roomId).emit('userLeft', socket.id);
+        }
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
