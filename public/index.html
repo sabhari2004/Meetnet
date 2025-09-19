@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meetnet</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+        input, button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Create or Join a Meeting</h1>
+    
+    <div id="controls">
+        <button id="createGroupBtn">Create Meeting</button>
+        <div id="groupIdDisplay" style="margin-top: 10px;"></div>
+        <hr style="margin: 20px 0;">
+        <input type="text" id="roomIdInput" placeholder="Enter Meeting ID">
+        <button id="joinBtn">Join Meeting</button>
+    </div>
+
+    <script>
+        const createGroupBtn = document.getElementById('createGroupBtn');
+        const joinBtn = document.getElementById('joinBtn');
+        const roomIdInput = document.getElementById('roomIdInput');
+        const groupIdDisplay = document.getElementById('groupIdDisplay');
+
+        createGroupBtn.addEventListener('click', () => {
+            const newGroupId = generateUniqueId();
+            groupIdDisplay.innerText = `Your Meeting ID: ${newGroupId}`;
+            roomIdInput.value = newGroupId;
+            
+            // Redirect to the new meeting page with the generated ID
+            window.location.href = `meeting.html?id=${newGroupId}`;
+        });
+
+        joinBtn.addEventListener('click', () => {
+            const roomId = roomIdInput.value;
+            if (!roomId) {
+                alert("Please enter a Meeting ID.");
+                return;
+            }
+            // Redirect to the meeting page with the entered ID
+            window.location.href = `meeting.html?id=${roomId}`;
+        });
+
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+    </script>
+</body>
+</html>

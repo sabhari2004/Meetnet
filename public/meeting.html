@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>In Meeting</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; }
+        #video-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        video {
+            width: 45%;
+            border: 2px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>In Meeting: <span id="roomIdDisplay"></span></h1>
+    
+    <div id="video-container">
+        </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const videoContainer = document.getElementById('video-container');
+        const roomIdDisplay = document.getElementById('roomIdDisplay');
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('id');
+
+        let localStream;
+        let rtpCapabilities;
+        let producerTransport;
+        let consumerTransport;
+        let producer;
+        const consumers = {};
+
+        // Display the meeting ID from the URL
+        if (roomId) {
+            roomIdDisplay.innerText = roomId;
+            startMeeting();
+        } else {
+            alert("No meeting ID provided. Please go back and create or join a meeting.");
+            window.location.href = 'index.html'; // Redirect if no ID
+        }
+
+        async function startMeeting() {
+            try {
+                // Request camera and microphone access, asking for permission
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+                // Add local video to the page
+                const localVideo = document.createElement('video');
+                localVideo.srcObject = localStream;
+                localVideo.autoplay = true;
+                localVideo.playsinline = true;
+                localVideo.muted = true;
+                videoContainer.appendChild(localVideo);
+
+                // Now, connect to the server with the SFU logic
+                await getRtpCapabilities();
+                await connectToServer(roomId);
+
+            } catch (error) {
+                console.error("Error accessing media devices.", error);
+                alert("Permission to use camera/microphone denied. Please allow access to join the meeting.");
+            }
+        }
+
+        // --- All the WebRTC and Socket.IO logic from the previous answer goes here ---
+        // (Copy and paste all the functions below this point from the previous `index.html` file)
+        
+        async function getRtpCapabilities() {
+            socket.emit('getRtpCapabilities', (data) => {
+                rtpCapabilities = data;
+            });
+        }
+
+        async function connectToServer(roomId) {
+            socket.emit('createTransport', { sctpCapabilities: false }, async (data) => {
+                producerTransport = await createTransport(data, true);
+                createProducer();
+            });
+            socket.emit('joinRoom', { roomId, rtpCapabilities });
+        }
+
+        async function createTransport(data, isProducer) {
+            const transport = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            transport.onicecandidate = ({ candidate }) => {
+                if (candidate) {
+                    socket.emit('transport-ice', { transportId: data.id, candidate });
+                }
+            };
+            await transport.setRemoteDescription(new RTCSessionDescription(data.iceParameters));
+            if (!isProducer) {
+                const answer = await transport.createAnswer();
+                await transport.setLocalDescription(answer);
+                socket.emit('transport-answer', { transportId: data.id, sdp: answer });
+            }
+            return transport;
+        }
+
+        async function createProducer() {
+            const track = localStream.getVideoTracks()[0];
+            producer = await producerTransport.addTrack(track);
+            producer.on('transportclose', () => {
+                console.log('Producer transport closed');
+            });
+        }
+
+        // Signaling Logic from the Server
+        socket.on('createConsumerTransport', async (data) => {
+            consumerTransport = await createTransport(data, false);
+        });
+
+        socket.on('newProducer', async (producerId) => {
+            console.log('New producer has joined:', producerId);
+            if (!consumerTransport) return;
+            const { rtpCapabilities } = rtpCapabilities;
+            socket.emit('consume', { producerId, rtpCapabilities }, async (data) => {
+                const consumer = await consumerTransport.addTrack(new RTCRtpCodecParameters(data));
+                consumers[producerId] = consumer;
+                const remoteVideo = document.createElement('video');
+                remoteVideo.srcObject = new MediaStream([consumer.track]);
+                remoteVideo.autoplay = true;
+                remoteVideo.playsinline = true;
+                videoContainer.appendChild(remoteVideo);
+            });
+        });
+
+    </script>
+</body>
+</html>
